@@ -334,6 +334,27 @@ const BackgroundCommands = {
       chrome.tabs.remove(tab.id);
     });
   },
+  async removeTabAndPreviousTab({ count, tab }) {
+    const tabs = await chrome.tabs.query(visibleTabsQueryArgs);
+    const activeTabIndex = getTabIndex(tab, tabs);
+    const startTabIndex = Math.max(0, Math.min(activeTabIndex, tabs.length - count));
+    const tabsToRemove = tabs.slice(startTabIndex, startTabIndex + count);
+    const filteredToRemove = tabsToRemove.filter((t) => !(t.pinned && bgUtils.isFirefox()));
+    if (filteredToRemove.length === 0) return;
+    // Only activate the previous tab if the current (active) tab will actually be removed.
+    // This avoids moving away from a pinned tab on Firefox which cannot be closed.
+    const activeWillBeRemoved = filteredToRemove.some((t) => t.id === tab.id);
+    if (activeWillBeRemoved && startTabIndex > 0) {
+      const previousTab = tabs[startTabIndex - 1];
+      await chrome.tabs.update(previousTab.id, { active: true });
+    }
+    const ids = filteredToRemove.map((t) => t.id);
+    if (ids.length === 1) {
+      await chrome.tabs.remove(ids[0]);
+    } else {
+      await chrome.tabs.remove(ids);
+    }
+  },
   restoreTab: createRepeatCommand(async (_request) => {
     await chrome.sessions.restore(null);
   }),
