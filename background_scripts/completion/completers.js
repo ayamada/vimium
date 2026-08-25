@@ -521,7 +521,7 @@ export class DomainCompleter {
       description: "domain",
       // This should be the URL or the domain, or an empty string, but not null.
       url: domainsAndScores[0]?.[0] || "",
-      relevancy: 2.0,
+      relevancy: 0.1,
     });
     return result.url.length > 0 ? [result] : [];
   }
