@@ -98,6 +98,60 @@ context("createTab command", () => {
   });
 });
 
+context("removeTabAndNextTab command", () => {
+  let tabs;
+  let activatedTabIds;
+  let removedTabIds;
+
+  setup(() => {
+    tabs = [1, 2, 3, 4].map((id, index) => ({ id, index }));
+    activatedTabIds = [];
+    removedTabIds = [];
+    stub(chrome.tabs, "query", withPromise(() => tabs));
+    stub(
+      chrome.tabs,
+      "update",
+      withPromise((id, properties) => {
+        if (properties?.active) activatedTabIds.push(id);
+      }),
+    );
+    stub(
+      chrome.tabs,
+      "remove",
+      withPromise((ids) => {
+        removedTabIds.push(...(Array.isArray(ids) ? ids : [ids]));
+      }),
+    );
+  });
+
+  const removeTabAndNextTab = (tabId, count) =>
+    BackgroundCommands.removeTabAndNextTab({ count, tab: tabs.find((t) => t.id === tabId) });
+
+  should("close the current tab and select the tab to its right", async () => {
+    await removeTabAndNextTab(2, 1);
+    assert.equal([3], activatedTabIds);
+    assert.equal([2], removedTabIds);
+  });
+
+  should("select the tab to the left if the current tab is the last tab", async () => {
+    await removeTabAndNextTab(4, 1);
+    assert.equal([3], activatedTabIds);
+    assert.equal([4], removedTabIds);
+  });
+
+  should("close count tabs and select the tab to their right", async () => {
+    await removeTabAndNextTab(1, 3);
+    assert.equal([4], activatedTabIds);
+    assert.equal([1, 2, 3], removedTabIds);
+  });
+
+  should("close the last count tabs if the count exceeds the remaining tabs", async () => {
+    await removeTabAndNextTab(4, 2);
+    assert.equal([2], activatedTabIds);
+    assert.equal([3, 4], removedTabIds);
+  });
+});
+
 context("Next zoom level", () => {
   // All these tests use the Chrome zoom levels, which are the default.
   should("Zoom in 0 times", async () => {

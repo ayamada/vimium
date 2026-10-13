@@ -538,6 +538,14 @@ const allCommands = [
   },
 
   {
+    name: "removeTabAndNextTab",
+    desc: "Close current tab and select next tab",
+    group: "tabs",
+    background: true,
+    repeatLimit: chrome.sessions?.MAX_SESSION_RESULTS || 25,
+  },
+
+  {
     name: "restoreTab",
     desc: "Restore closed tab",
     group: "tabs",
